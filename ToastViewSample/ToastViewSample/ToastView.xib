@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="6245" systemVersion="13E28" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="6238"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="iN0-l3-epB">
+            <rect key="frame" x="0.0" y="0.0" width="200" height="200"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <view tag="2" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="w9S-yi-lsN">
+                    <rect key="frame" x="72" y="153" width="56" height="27"/>
+                    <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" tag="1" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="NoL-ie-C2s">
+                            <rect key="frame" x="10" y="5" width="36" height="17"/>
+                            <constraints>
+                                <constraint firstAttribute="width" relation="lessThanOrEqual" constant="300" id="1tU-Ey-kPS"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                            <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="calibratedRGB"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                    </subviews>
+                    <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                    <constraints>
+                        <constraint firstAttribute="trailing" secondItem="NoL-ie-C2s" secondAttribute="trailing" constant="10" id="bod-V3-ZbB"/>
+                        <constraint firstItem="NoL-ie-C2s" firstAttribute="leading" secondItem="w9S-yi-lsN" secondAttribute="leading" constant="10" id="oEO-mG-fgy"/>
+                        <constraint firstItem="NoL-ie-C2s" firstAttribute="top" secondItem="w9S-yi-lsN" secondAttribute="top" constant="5" id="oGR-ag-eVN"/>
+                        <constraint firstAttribute="bottom" secondItem="NoL-ie-C2s" secondAttribute="bottom" constant="5" id="sWp-AY-Krs"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+            <constraints>
+                <constraint firstItem="w9S-yi-lsN" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" id="2wv-K0-XW7"/>
+                <constraint firstItem="w9S-yi-lsN" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" id="FIb-1U-2si"/>
+                <constraint firstAttribute="bottom" secondItem="w9S-yi-lsN" secondAttribute="bottom" constant="20" id="M2g-dC-PDu"/>
+                <constraint firstAttribute="centerX" secondItem="w9S-yi-lsN" secondAttribute="centerX" id="ofI-UV-CD6"/>
+            </constraints>
+            <nil key="simulatedStatusBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <variation key="default">
+                <mask key="constraints">
+                    <exclude reference="2wv-K0-XW7"/>
+                    <exclude reference="FIb-1U-2si"/>
+                </mask>
+            </variation>
+            <point key="canvasLocation" x="131.5" y="45"/>
+        </view>
+    </objects>
+</document>
