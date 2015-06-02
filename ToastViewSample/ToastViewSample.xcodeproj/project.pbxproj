@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CCD2D0151B1DDE3000A44F9D /* DOTasker.m in Sources */ = {isa = PBXBuildFile; fileRef = CCD2D0141B1DDE3000A44F9D /* DOTasker.m */; };
 		CCFE63C71A31F46700456399 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CCFE63C61A31F46700456399 /* main.m */; };
 		CCFE63CA1A31F46700456399 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CCFE63C91A31F46700456399 /* AppDelegate.m */; };
 		CCFE63CD1A31F46700456399 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CCFE63CC1A31F46700456399 /* ViewController.m */; };
@@ -32,6 +33,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CCD2D0131B1DDE3000A44F9D /* DOTasker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOTasker.h; sourceTree = "<group>"; };
+		CCD2D0141B1DDE3000A44F9D /* DOTasker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOTasker.m; sourceTree = "<group>"; };
 		CCFE63C11A31F46700456399 /* ToastViewSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ToastViewSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCFE63C51A31F46700456399 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CCFE63C61A31F46700456399 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -74,6 +77,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CCD2D0121B1DDE3000A44F9D /* Tasker */ = {
+			isa = PBXGroup;
+			children = (
+				CCD2D0131B1DDE3000A44F9D /* DOTasker.h */,
+				CCD2D0141B1DDE3000A44F9D /* DOTasker.m */,
+			);
+			path = Tasker;
+			sourceTree = "<group>";
+		};
 		CCFE63B81A31F46700456399 = {
 			isa = PBXGroup;
 			children = (
@@ -95,6 +107,7 @@
 		CCFE63C31A31F46700456399 /* ToastViewSample */ = {
 			isa = PBXGroup;
 			children = (
+				CCD2D0121B1DDE3000A44F9D /* Tasker */,
 				CCFE63EA1A31F48A00456399 /* Toast */,
 				CCFE63F31A32FDF900456399 /* Layout */,
 				CCFE63C81A31F46700456399 /* AppDelegate.h */,
@@ -262,6 +275,7 @@
 			files = (
 				CCFE63F91A330CAB00456399 /* LayoutableView.m in Sources */,
 				CCFE63ED1A31F4B300456399 /* ToastView.m in Sources */,
+				CCD2D0151B1DDE3000A44F9D /* DOTasker.m in Sources */,
 				CCFE63CD1A31F46700456399 /* ViewController.m in Sources */,
 				CCFE63CA1A31F46700456399 /* AppDelegate.m in Sources */,
 				CCFE63C71A31F46700456399 /* main.m in Sources */,
@@ -456,6 +470,7 @@
 				CCFE63E61A31F46700456399 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		CCFE63E71A31F46700456399 /* Build configuration list for PBXNativeTarget "ToastViewSampleTests" */ = {
 			isa = XCConfigurationList;
@@ -464,6 +479,7 @@
 				CCFE63E91A31F46700456399 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
