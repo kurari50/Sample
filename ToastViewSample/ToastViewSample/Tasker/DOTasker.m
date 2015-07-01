@@ -42,9 +42,9 @@ typedef NS_ENUM(int, DOTaskerResultType) {
 
 @property (nonatomic, assign) BOOL alreadyStarted;
 @property (nonatomic, assign) BOOL alreadyCallbacked;
+@property (nonatomic, assign) BOOL taskBlockPassed;
 
 @property (nonatomic, assign, readwrite) BOOL isCancelled;
-@property (nonatomic, strong) id<DOCancelable> cancelable;
 
 @property (nonatomic, strong) DOTasker *nextTasker;
 @property (nonatomic, strong) DOTasker *prevTasker;
@@ -118,7 +118,7 @@ static NSObject *DOTasker_lock;
                                 exception:(DOExceptionBlock)exception
                                   finally:(DOFinallyBlock)finally;
 {
-    __block DOTasker *newTasker = [DOTasker taskerWithBlock:^id<DOCancelable> (DOTasker *tasker, NSMutableDictionary *userInfo) {
+    __block DOTasker *newTasker = [DOTasker taskerWithBlock:^(DOTasker *tasker, NSMutableDictionary *userInfo) {
         NSArray *results = nil; {
             NSMutableArray *t = [NSMutableArray arrayWithCapacity:taskers.count];
             for (int i = 0, len = (int)taskers.count; i < len; i++) {
@@ -250,8 +250,6 @@ static NSObject *DOTasker_lock;
             
             [tasker startWithUserInfo:userInfo];
         }];
-        
-        return nil;
     } success:success failure:failure progress:progress cancel:cancel exception:exception finally:finally];
     
     return newTasker;
@@ -281,7 +279,10 @@ static NSObject *DOTasker_lock;
     
     self.isCancelled = YES;
     
-    [self.cancelable cancel];
+    DOCancelExecBlock b = self.cancelExecBlock;
+    if (b) {
+        b(self);
+    }
 }
 
 - (instancetype)nextTasker:(DOTasker *)nextTasker
@@ -335,6 +336,8 @@ static NSObject *DOTasker_lock;
                 if (blockSelf.isCancelled) {
                     [blockSelf callCancelWithUserInfo:userInfo];
                 }
+                
+                self.taskBlockPassed = YES;
             }
             @catch (NSException *exception) {
                 [blockSelf callExceptionWithException:exception userInfo:userInfo];

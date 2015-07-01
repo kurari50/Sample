@@ -10,13 +10,7 @@
 
 @class DOTasker;
 
-@protocol DOCancelable <NSObject>
-
-- (void)cancel;
-
-@end
-
-typedef id<DOCancelable> (^DOTaskBlock)(DOTasker *tasker, NSMutableDictionary *userInfo);
+typedef void (^DOTaskBlock)(DOTasker *tasker, NSMutableDictionary *userInfo);
 typedef void (^DOSuccessBlock)(DOTasker *tasker, NSMutableDictionary *userInfo);
 typedef void (^DOFailureBlock)(DOTasker *tasker, NSError *error, NSMutableDictionary *userInfo);
 typedef void (^DOProgressBlock)(DOTasker *tasker, float progress, NSMutableDictionary *userInfo);
@@ -24,6 +18,7 @@ typedef void (^DOCancelBlock)(DOTasker *tasker, NSMutableDictionary *userInfo);
 typedef void (^DOExceptionBlock)(DOTasker *tasker, NSException *exception, NSMutableDictionary *userInfo);
 typedef void (^DOFinallyBlock)(DOTasker *tasker, NSMutableDictionary *userInfo);
 typedef void (^DOCancelledBlock)(NSMutableDictionary *userInfo);
+typedef void (^DOCancelExecBlock)(DOTasker *tasker);
 
 @protocol DOTasker <NSObject>
 @end
@@ -43,6 +38,7 @@ typedef void (^DOCancelledBlock)(NSMutableDictionary *userInfo);
 @interface DOTasker : NSObject <DOTaskerCantCall>
 
 @property (nonatomic, assign, readonly) BOOL isCancelled;
+@property (nonatomic, copy) DOCancelExecBlock cancelExecBlock;
 
 + (instancetype)taskerWithBlock:(DOTaskBlock)task
                         success:(DOSuccessBlock)success
