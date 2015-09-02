@@ -19,6 +19,8 @@
 @property (nonatomic, strong) NSMutableArray *sectionElements;
 @property (nonatomic, strong) NSMutableDictionary *supplementaryViewElements;
 
+@property (nonatomic, strong) NSDictionary *collectionInfo;
+
 @end
 
 @implementation LabeledCollectionUtil
@@ -164,10 +166,34 @@
     return [UICollectionViewLayoutAttributes layoutAttributesForDecorationViewOfKind:@"divider" withIndexPath:indexPath];
 }
 
+- (NSDictionary *)createCollectionInfo
+{
+    UICollectionView *collectionView = self.collectionView;
+    CGRect collectionViewRect = collectionView.frame;
+    NSInteger sectionCount = collectionView.numberOfSections;
+    
+    NSMutableArray *itemCountArray = [@[] mutableCopy];
+    for (NSInteger s = 0; s < sectionCount; s++) {
+        NSInteger itemCount = [collectionView numberOfItemsInSection:s];
+        [itemCountArray addObject:@(itemCount)];
+    }
+    return @{
+             @"collectionViewSize": NSStringFromCGRect(collectionViewRect),
+             @"sectionCount": @(sectionCount),
+             @"itemCountArray": itemCountArray,
+             };
+}
+
 - (void)prepareLayout
 {
     UICollectionView *collectionView = self.collectionView;
     CGSize collectionViewSize = collectionView.frame.size;
+    
+    NSDictionary *newCollectionInfo = [self createCollectionInfo];
+    if ([self.collectionInfo isEqualToDictionary:newCollectionInfo]) {
+        return;
+    }
+    self.collectionInfo = newCollectionInfo;
     
     NSMutableArray *sectionElements = [@[] mutableCopy];
     NSMutableDictionary *supplementaryViewElements = [@{} mutableCopy];
