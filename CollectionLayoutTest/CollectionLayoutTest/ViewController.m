@@ -40,9 +40,12 @@
 {
     [super prepareLayout];
     
-    self.util = [[LabeledCollectionUtil alloc] initWithCollectionViewLayout:self];
-    [self.util setSectionIndexView:self.sectionIndexView];
-    self.util.dividerViewClass = [DividerView class];
+    if (self.util == nil) {
+        self.util = [[LabeledCollectionUtil alloc] initWithCollectionViewLayout:self];
+        [self.util setSectionIndexView:self.sectionIndexView];
+        self.util.dividerViewClass = [DividerView class];
+    }
+    
     [self.util prepareLayout];
 }
 
