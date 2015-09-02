@@ -218,6 +218,7 @@
             [sectionElements addObject:@[]];
             continue;
         }
+        itemCount++;// 1つ多く計算しておく
         
         NSMutableArray *array = [@[] mutableCopy];
         
@@ -266,7 +267,10 @@
                 }
                 
                 x = 0;
-                y += maxCellHeight + marginOfLine;
+                if (j != itemCount - 1) {
+                    // 最後のセルは計算だけで、高さに影響を与えないようにする
+                    y += maxCellHeight + marginOfLine;
+                }
                 maxCellHeight = 0;
                 count = 0;
                 index = j;
