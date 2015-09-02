@@ -437,7 +437,9 @@
 
 - (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    return self.sectionElements[indexPath.section][indexPath.item];
+    UICollectionViewLayoutAttributes *attr = self.sectionElements[indexPath.section][indexPath.item];
+    attr.hidden = NO;
+    return [attr copy];
 }
 
 - (UICollectionViewLayoutAttributes *)layoutAttributesForSupplementaryViewOfKind:(NSString *)elementKind atIndexPath:(NSIndexPath *)indexPath
