@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9046" systemVersion="14F27" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9035"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="iN0-l3-epB" customClass="DOMenuItemView">
+            <rect key="frame" x="0.0" y="0.0" width="100" height="50"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Rca-Hh-RG7">
+                    <rect key="frame" x="31" y="16" width="16" height="18"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="16" id="AwF-Fp-mez"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                    <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ng8-15-JGG">
+                    <rect key="frame" x="47" y="15" width="22" height="20"/>
+                    <subviews>
+                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Hmb-aE-5Mw">
+                            <rect key="frame" x="2" y="0.0" width="20" height="20"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="20" id="TL7-kF-RqU"/>
+                                <constraint firstAttribute="height" constant="20" id="tyP-nB-dHZ"/>
+                            </constraints>
+                        </imageView>
+                    </subviews>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="20" id="9DA-vh-fC1"/>
+                        <constraint firstAttribute="trailing" secondItem="Hmb-aE-5Mw" secondAttribute="trailing" id="cP3-Sp-Y0N"/>
+                        <constraint firstAttribute="bottom" secondItem="Hmb-aE-5Mw" secondAttribute="bottom" id="sN5-tO-rMe"/>
+                        <constraint firstAttribute="width" constant="22" id="zBE-QB-FE6"/>
+                    </constraints>
+                </view>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bvv-TS-8iN">
+                    <rect key="frame" x="26" y="47" width="48" height="3"/>
+                    <color key="backgroundColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="3" id="w3w-7D-yIf"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <constraints>
+                <constraint firstItem="Rca-Hh-RG7" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="centerY" id="7yH-PO-1y3"/>
+                <constraint firstItem="Rca-Hh-RG7" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="31" id="A4r-kU-ArY"/>
+                <constraint firstAttribute="bottom" secondItem="bvv-TS-8iN" secondAttribute="bottom" id="Cln-yZ-VvQ"/>
+                <constraint firstItem="bvv-TS-8iN" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="GJu-XD-0gg"/>
+                <constraint firstItem="ng8-15-JGG" firstAttribute="centerY" secondItem="Rca-Hh-RG7" secondAttribute="centerY" id="PCM-FS-EvT"/>
+                <constraint firstItem="bvv-TS-8iN" firstAttribute="leading" secondItem="Rca-Hh-RG7" secondAttribute="leading" constant="-5" id="dpm-nJ-7Rv"/>
+                <constraint firstItem="ng8-15-JGG" firstAttribute="trailing" secondItem="bvv-TS-8iN" secondAttribute="trailing" constant="-5" id="pTc-gH-HAF"/>
+                <constraint firstItem="ng8-15-JGG" firstAttribute="leading" secondItem="Rca-Hh-RG7" secondAttribute="trailing" id="wd6-cp-2ji"/>
+                <constraint firstItem="bvv-TS-8iN" firstAttribute="width" secondItem="Rca-Hh-RG7" secondAttribute="width" constant="10" id="xdA-Ps-Xse"/>
+            </constraints>
+            <nil key="simulatedStatusBarMetrics"/>
+            <nil key="simulatedTopBarMetrics"/>
+            <nil key="simulatedBottomBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <variation key="default">
+                <mask key="constraints">
+                    <exclude reference="GJu-XD-0gg"/>
+                    <exclude reference="xdA-Ps-Xse"/>
+                </mask>
+            </variation>
+            <connections>
+                <outlet property="iconImageView" destination="Hmb-aE-5Mw" id="6tf-R9-MEM"/>
+                <outlet property="iconWidthConstraint" destination="zBE-QB-FE6" id="Dnd-Q8-ImM"/>
+                <outlet property="indicatorView" destination="bvv-TS-8iN" id="B84-pX-yNY"/>
+                <outlet property="leadingConstraint" destination="A4r-kU-ArY" id="e2d-zl-jW4"/>
+                <outlet property="textLabel" destination="Rca-Hh-RG7" id="jtf-AI-ipv"/>
+                <outlet property="textWidthConstraint" destination="AwF-Fp-mez" id="oOx-Rb-8Ff"/>
+            </connections>
+            <point key="canvasLocation" x="97" y="187"/>
+        </view>
+    </objects>
+</document>
