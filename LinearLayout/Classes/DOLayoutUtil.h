@@ -22,7 +22,7 @@
 
 @property (nonatomic) BOOL dryRun;
 
-- (instancetype)clone;
+- (nonnull instancetype)clone;
 
 @end
 
@@ -39,17 +39,17 @@
 /**
  * viewに対してsetNeedsLayoutする
  */
-+ (void)setNeedsLayout:(UIView *)view;
++ (void)setNeedsLayout:(nonnull UIView *)view;
 
 /**
  * superviewに対してsetNeedsLayoutする
  */
-+ (void)setNeedsLayoutToSuperview:(UIView *)view;
++ (void)setNeedsLayoutToSuperview:(nonnull UIView *)view;
 
 /**
  * Viewのコンテンツサイズを取得する
  */
-+ (CGSize)contentSize:(UIView *)view limitSize:(CGSize)limitSize;
++ (CGSize)contentSize:(nonnull UIView *)view limitSize:(CGSize)limitSize;
 
 /**
  * fromをlimitに入りきるサイズに調整する
@@ -59,7 +59,27 @@
 /**
  * レイアウトする
  */
-+ (CGSize)layoutSubviews:(NSViewArray *)subviews inView:(UIView *)view offset:(CGPoint)offset param:(DOLinearLayoutSubviewsParam *)param;
++ (CGSize)layoutSubviews:(nonnull NSViewArray *)subviews linearLayoutParams:(nonnull NSArray *)linearLayoutParams inView:(nonnull UIView *)view offset:(CGPoint)offset param:(nonnull DOLinearLayoutSubviewsParam *)param;
+
+/**
+ * DOLinearLayoutがスクロールする場合、UIScrollViewを取得する
+ */
++ (nullable UIScrollView *)scrollViewWithSubviews:(nonnull NSViewArray *)subviews;
+
+/**
+ * subviewsからDOLinearLayoutParamの配列を取得する
+ */
++ (nonnull NSArray *)subviewsLinearLayoutParamsWithSubviews:(nonnull NSViewArray *)subviews;
+
+/**
+ * DOLinearLayoutから指定のtagのついたViewを取得する
+ */
++ (nullable UIView *)viewWithTag:(NSInteger)tag inLinearLayout:(nonnull DOLinearLayout *)linearLayout;
+
+/**
+ * DOLinearLayoutScrollView内のViewを配置する
+ */
++ (void)setSubviewsInLinearLayout:(nonnull UIScrollView *)scrollView;
 
 /**
  * 四捨五入

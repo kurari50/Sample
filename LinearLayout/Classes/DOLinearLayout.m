@@ -17,18 +17,18 @@
 
 @interface DOLinearLayoutParam ()
 
-@property (nonatomic, weak) UIView *view;
+@property (nonatomic, weak, nullable) UIView *view;
 
-@property (nonatomic) NSString *absolutePositionString;
-@property (nonatomic) NSString *relativePositionString;
-@property (nonatomic) NSString *relativeMarginString;
-@property (nonatomic, weak) UIView *relativeView;
+@property (nonatomic, nullable) NSString *absolutePositionString;
+@property (nonatomic, nullable) NSString *relativePositionString;
+@property (nonatomic, nullable) NSString *relativeMarginString;
+@property (nonatomic, weak, nullable) UIView *relativeView;
 
 @end
 
 @implementation DOLinearLayoutParam
 
-+ (instancetype)paramWithWidth:(CGFloat)w widthParam:(UIViewLayoutParam)wp height:(CGFloat)h heightParam:(UIViewLayoutParam)hp
++ (nonnull instancetype)paramWithWidth:(CGFloat)w widthParam:(UIViewLayoutParam)wp height:(CGFloat)h heightParam:(UIViewLayoutParam)hp
 {
     DOLinearLayoutParam *ret = [[DOLinearLayoutParam alloc] init];
     
@@ -40,22 +40,22 @@
     return ret;
 }
 
-+ (instancetype)paramWithWidth:(CGFloat)w height:(CGFloat)h
++ (nonnull instancetype)paramWithWidth:(CGFloat)w height:(CGFloat)h
 {
     return [self.class paramWithWidth:w widthParam:UIViewLayoutParamMatchParent height:h heightParam:UIViewLayoutParamMatchParent];
 }
 
-+ (instancetype)paramMatchParent
++ (nonnull instancetype)paramMatchParent
 {
     return [self.class paramWithWidth:0 widthParam:UIViewLayoutParamMatchParent height:0 heightParam:UIViewLayoutParamMatchParent];
 }
 
-+ (instancetype)paramWrapContent
++ (nonnull instancetype)paramWrapContent
 {
     return [self.class paramWithWidth:0 widthParam:UIViewLayoutParamWrapContent height:0 heightParam:UIViewLayoutParamWrapContent];
 }
 
-+ (instancetype)paramAbsolutePosition:(CGPoint)position
++ (nonnull instancetype)paramAbsolutePosition:(CGPoint)position
 {
     DOLinearLayoutParam *p = [self.class paramWrapContent];
     p.isIgnoredFromLinearLayout = YES;
@@ -63,17 +63,17 @@
     return p;
 }
 
-+ (instancetype)paramSamePositionToView:(UIView *)view
++ (nonnull instancetype)paramSamePositionToView:(nonnull UIView *)view
 {
     return [self.class paramRelativePosition:CGPointZero toView:view];
 }
 
-+ (instancetype)paramRelativePosition:(CGPoint)position toView:(UIView *)view
++ (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view
 {
     return [self.class paramRelativePosition:CGPointZero toView:view margin:UIEdgeInsetsZero];
 }
 
-+ (instancetype)paramRelativePosition:(CGPoint)position toView:(UIView *)view margin:(UIEdgeInsets)margin
++ (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view margin:(UIEdgeInsets)margin
 {
     DOLinearLayoutParam *p = [self.class paramWrapContent];
     p.isIgnoredFromLinearLayout = YES;
@@ -120,6 +120,30 @@
     }
 }
 
+- (void)setWeight:(CGFloat)weight
+{
+    _weight = weight;
+    [self.view setNeedsLayout];
+}
+
+- (void)setMargin:(UIEdgeInsets)margin
+{
+    _margin = margin;
+    [self.view setNeedsLayout];
+}
+
+- (void)setVisibility:(UIViewVisibility)visibility
+{
+    _visibility = visibility;
+    [self.view setNeedsLayout];
+}
+
+- (void)setContentSize:(CGSize)contentSize
+{
+    _contentSize = contentSize;
+    [self.view setNeedsLayout];
+}
+
 - (void)setWidth:(CGFloat)width
 {
     _width = width;
@@ -154,19 +178,22 @@
     return self.width == 0 && self.widthParam == UIViewLayoutParamMatchParent;
 }
 
+- (BOOL)isMatchParentWithOrientation:(DOLinearLayoutOrientation)orientation
+{
+    if (orientation == DOLinearLayoutOrientationHorizontal) {
+        return [self isWidthMatchParent];
+    } else {
+        return [self isHeightMatchParent];
+    }
+}
+
 @end
 
 @implementation UIView (DOLinearLayout)
 
 - (void)setDo_isIgnoredFromLinearLayout:(BOOL)do_isIgnoredFromLinearLayout
 {
-    if ([self do_layoutParam]) {
-        [self do_layoutParam].isIgnoredFromLinearLayout = do_isIgnoredFromLinearLayout;
-    } else {
-        DOLinearLayoutParam *param = [DOLinearLayoutParam paramMatchParent];
-        param.isIgnoredFromLinearLayout = do_isIgnoredFromLinearLayout;
-        [self setDo_layoutParam:param];
-    }
+    [self do_layoutParam].isIgnoredFromLinearLayout = do_isIgnoredFromLinearLayout;
 }
 
 - (BOOL)do_isIgnoredFromLinearLayout
@@ -177,37 +204,63 @@
 - (void)setDo_weight:(CGFloat)do_weight
 {
     objc_setAssociatedObject(self, @selector(do_weight), @(do_weight), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [self do_layoutParam].weight = do_weight;
     
     [DOLayoutUtil setNeedsLayoutToSuperview:self];
 }
 
 - (CGFloat)do_weight
 {
-    return [objc_getAssociatedObject(self, @selector(do_weight)) doubleValue];
+    return [self do_layoutParam].weight;
 }
 
-- (void)setDo_layoutParam:(DOLinearLayoutParam *)do_layoutParam
+- (void)setDo_layoutParam:(nonnull DOLinearLayoutParam *)do_layoutParam
 {
+    NSInteger viewTag = [objc_getAssociatedObject(self, @selector(do_layoutParam)) viewTag];
+    
+    if (do_layoutParam == nil) {
+        do_layoutParam = [DOLinearLayoutParam paramMatchParent];
+    }
     objc_setAssociatedObject(self, @selector(do_layoutParam), do_layoutParam, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    
+    CGFloat weight = [objc_getAssociatedObject(self, @selector(do_weight)) doubleValue];
+    if (weight) {
+        // UIView.do_weightに設定されていたものを残す
+        do_layoutParam.weight = weight;
+    }
+    UIEdgeInsets margin = UIEdgeInsetsFromString(objc_getAssociatedObject(self, @selector(do_layoutMargin)));
+    if (!UIEdgeInsetsEqualToEdgeInsets(margin, UIEdgeInsetsZero)) {
+        // UIView.do_layoutMarginに設定されていたものを残す
+        do_layoutParam.margin = margin;
+    }
+    UIViewVisibility visibility = [objc_getAssociatedObject(self, @selector(do_visibility)) intValue];
+    if (visibility != UIViewVisibilityVisible) {
+        // UIView.do_layoutMarginに設定されていたものを残す
+        do_layoutParam.visibility = visibility;
+    }
+    if (viewTag) {
+        // UIView.tagに設定されていたものを残す
+        do_layoutParam.viewTag = viewTag;
+    }
+    
     do_layoutParam.view = self.superview;
     
     [DOLayoutUtil setNeedsLayoutToSuperview:self];
 }
 
-- (DOLinearLayoutParam *)do_layoutParam
+- (nonnull DOLinearLayoutParam *)do_layoutParam
 {
-    return objc_getAssociatedObject(self, @selector(do_layoutParam));
+    DOLinearLayoutParam *p = objc_getAssociatedObject(self, @selector(do_layoutParam));
+    if (p == nil) {
+        [self setDo_layoutParam:[DOLinearLayoutParam paramMatchParent]];
+        p = self.do_layoutParam;
+    }
+    return p;
 }
 
 - (void)setDo_layoutParamWidth:(CGFloat)do_layoutParamWidth
 {
-    if ([self do_layoutParam]) {
-        [self do_layoutParam].width = do_layoutParamWidth;
-    } else {
-        DOLinearLayoutParam *param = [DOLinearLayoutParam paramMatchParent];
-        param.width = do_layoutParamWidth;
-        [self setDo_layoutParam:param];
-    }
+    [self do_layoutParam].width = do_layoutParamWidth;
 }
 
 - (CGFloat)do_layoutParamWidth
@@ -218,13 +271,7 @@
 - (void)setDo_layoutParamWidthIsWrapContent:(BOOL)do_layoutParamWidthIsWrapContent
 {
     UIViewLayoutParam p = (do_layoutParamWidthIsWrapContent) ? UIViewLayoutParamWrapContent : UIViewLayoutParamMatchParent;
-    if ([self do_layoutParam]) {
-        [self do_layoutParam].widthParam = p;
-    } else {
-        DOLinearLayoutParam *param = [DOLinearLayoutParam paramMatchParent];
-        param.widthParam = p;
-        [self setDo_layoutParam:param];
-    }
+    [self do_layoutParam].widthParam = p;
 }
 
 - (BOOL)do_layoutParamWidthIsWrapContent
@@ -234,13 +281,7 @@
 
 - (void)setDo_layoutParamHeight:(CGFloat)do_layoutParamHeight
 {
-    if ([self do_layoutParam]) {
-        [self do_layoutParam].height = do_layoutParamHeight;
-    } else {
-        DOLinearLayoutParam *param = [DOLinearLayoutParam paramMatchParent];
-        param.height = do_layoutParamHeight;
-        [self setDo_layoutParam:param];
-    }
+    [self do_layoutParam].height = do_layoutParamHeight;
 }
 
 - (CGFloat)do_layoutParamHeight
@@ -251,13 +292,7 @@
 - (void)setDo_layoutParamHeightIsWrapContent:(BOOL)do_layoutParamHeightIsWrapContent
 {
     UIViewLayoutParam p = (do_layoutParamHeightIsWrapContent) ? UIViewLayoutParamWrapContent : UIViewLayoutParamMatchParent;
-    if ([self do_layoutParam]) {
-        [self do_layoutParam].heightParam = p;
-    } else {
-        DOLinearLayoutParam *param = [DOLinearLayoutParam paramMatchParent];
-        param.heightParam = p;
-        [self setDo_layoutParam:param];
-    }
+    [self do_layoutParam].heightParam = p;
 }
 
 - (BOOL)do_layoutParamHeightIsWrapContent
@@ -268,13 +303,14 @@
 - (void)setDo_layoutMargin:(UIEdgeInsets)do_layoutMargin
 {
     objc_setAssociatedObject(self, @selector(do_layoutMargin), NSStringFromUIEdgeInsets(do_layoutMargin), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [self do_layoutParam].margin = do_layoutMargin;
     
     [DOLayoutUtil setNeedsLayoutToSuperview:self];
 }
 
 - (UIEdgeInsets)do_layoutMargin
 {
-    return UIEdgeInsetsFromString(objc_getAssociatedObject(self, @selector(do_layoutMargin)));
+    return [self do_layoutParam].margin;
 }
 
 - (CGFloat)do_layoutMarginTop
@@ -328,25 +364,27 @@
 - (void)setDo_visibility:(UIViewVisibility)do_visibility
 {
     objc_setAssociatedObject(self, @selector(do_visibility), @(do_visibility), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [self do_layoutParam].visibility = do_visibility;
     
     [DOLayoutUtil setNeedsLayoutToSuperview:self];
 }
 
 - (UIViewVisibility)do_visibility
 {
-    return [objc_getAssociatedObject(self, @selector(do_visibility)) intValue];
+    return [self do_layoutParam].visibility;
 }
 
 - (void)setDo_contentSize:(CGSize)do_contentSize
 {
     objc_setAssociatedObject(self, @selector(do_contentSize), NSStringFromCGSize(do_contentSize), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [self do_layoutParam].contentSize = do_contentSize;
     
     [DOLayoutUtil setNeedsLayoutToSuperview:self];
 }
 
 - (CGSize)do_contentSize
 {
-    CGSize (^applyLayoutMarginBlock)(UIView *v, CGSize size) = ^(UIView *v, CGSize size) {
+    CGSize (^applyLayoutMarginBlock)(UIView * __nonnull v, CGSize size) = ^(UIView * __nonnull v, CGSize size) {
         UIEdgeInsets margin = [v do_layoutMargin];
         if (UIEdgeInsetsEqualToEdgeInsets(margin, UIEdgeInsetsZero)) {
             return size;
@@ -475,6 +513,17 @@
 
 @end
 
+@interface UIView (DOLinearLayoutable_Private)
+
+- (void)layoutSubviews_DOLinearLayout;
+- (void)didAddSubview_DOLinearLayout:(nonnull UIView *)subview;
+- (void)willRemoveSubview_DOLinearLayout:(nonnull UIView *)subview;
+- (void)setNeedsLayout_DOLinearLayout;
+- (void)setDo_size_DOLinearLayout:(CGSize)do_size;
+- (void)setTag_DOLinearLayout:(NSInteger)tag;
+
+@end
+
 @implementation DOLinearLayout
 
 + (void)load
@@ -511,11 +560,20 @@ static BOOL preparedLinearLayoutable;
         toMethod = class_getInstanceMethod([UIView class], @selector(setDo_size_DOLinearLayout:));
         method_exchangeImplementations(fromMethod, toMethod);
         
+        fromMethod = class_getInstanceMethod([UIView class], @selector(setTag:));
+        toMethod = class_getInstanceMethod([UIView class], @selector(setTag_DOLinearLayout:));
+        method_exchangeImplementations(fromMethod, toMethod);
+        
         preparedLinearLayoutable = YES;
     });
 }
 
-- (instancetype)initWithCoder:(NSCoder *)coder
+- (nullable UIScrollView *)scrollView
+{
+    return [DOLayoutUtil scrollViewWithSubviews:self.subviews];
+}
+
+- (instancetype)initWithCoder:(nonnull NSCoder *)coder
 {
     self = [super initWithCoder:coder];
     if (self) {
@@ -540,19 +598,19 @@ static BOOL preparedLinearLayoutable;
 {
     CGSize intrinsicContentSize = [self do_contentSize];
     
-    for (UIView *v in self.subviews) {
-        if (v.do_isIgnoredFromLinearLayout) {
+    for (DOLinearLayoutParam *p in self.subviewsLinearLayoutParams) {
+        if (p.isIgnoredFromLinearLayout) {
             continue;
         }
         
-        if ([v isWidthMatchParent]) {
+        if ([p isWidthMatchParent]) {
             intrinsicContentSize.width = UIViewNoIntrinsicMetric;
             
             if (intrinsicContentSize.height == UIViewNoIntrinsicMetric) {
                 break;
             }
         }
-        if ([v isHeightMatchParent]) {
+        if ([p isHeightMatchParent]) {
             intrinsicContentSize.height = UIViewNoIntrinsicMetric;
             
             if (intrinsicContentSize.width == UIViewNoIntrinsicMetric) {
@@ -572,11 +630,13 @@ static BOOL preparedLinearLayoutable;
     param.gravity = self.layoutGravity;
     param.autoLineBreak = self.enableAutoLineBreak;
     param.dryRun = YES;
-    CGSize sizeThatFits = [DOLayoutUtil layoutSubviews:self.subviews inView:view offset:CGPointZero param:param];
+    NSViewArray *subviews = self.subviews;
+    NSArray *subviewsLinearLayoutParams = self.subviewsLinearLayoutParams;
+    CGSize sizeThatFits = [DOLayoutUtil layoutSubviews:subviews linearLayoutParams:subviewsLinearLayoutParams inView:view offset:CGPointZero param:param];
     return sizeThatFits;
 }
 
-- (void)addConstraint:(NSLayoutConstraint *)constraint
+- (void)addConstraint:(nonnull NSLayoutConstraint *)constraint
 {
     if ([constraint isKindOfClass:NSClassFromString(@"NSIBPrototypingLayoutConstraint")]) {
         // InterfaceBuilderで自動で設定される制約は無視する
@@ -593,7 +653,7 @@ static BOOL preparedLinearLayoutable;
     [super addConstraint:constraint];
 }
 
-- (void)removeConstraint:(NSLayoutConstraint *)constraint
+- (void)removeConstraint:(nonnull NSLayoutConstraint *)constraint
 {
     if (![constraint isMemberOfClass:[NSLayoutConstraint class]]) {
         return;
@@ -650,19 +710,28 @@ static BOOL preparedLinearLayoutable;
     [DOLayoutUtil setNeedsLayout:self];
 }
 
-- (void)addSubview:(UIView *)view
+- (UIView *)viewWithTag:(NSInteger)tag
+{
+    UIView *v = [super viewWithTag:tag];
+    if (v == nil) {
+        v = [DOLayoutUtil viewWithTag:tag inLinearLayout:self];
+    }
+    return v;
+}
+
+- (void)addSubview:(nonnull UIView *)view
 {
     [super addSubview:view];
 }
 
-- (void)layoutLinearLayoutSubviews:(NSViewArray *)subviews
+- (void)layoutLinearLayoutSubviews:(nonnull NSViewArray *)subviews linearLayoutParams:(nonnull NSArray *)linearLayoutParams
 {
     DOLinearLayoutSubviewsParam *param = [[DOLinearLayoutSubviewsParam alloc] init];
     param.orientation = self.layoutOrientation;
     param.gravity = self.layoutGravity;
     param.autoLineBreak = self.enableAutoLineBreak;
     param.dryRun = NO;
-    [DOLayoutUtil layoutSubviews:subviews inView:self offset:CGPointZero param:param];
+    [DOLayoutUtil layoutSubviews:subviews linearLayoutParams:linearLayoutParams inView:self offset:CGPointZero param:param];
 }
 
 /**
@@ -740,12 +809,20 @@ static BOOL preparedLinearLayoutable;
     }
 }
 
+- (void)setTag_DOLinearLayout:(NSInteger)tag
+{
+    [self setTag_DOLinearLayout:tag];
+    
+    self.do_layoutParam.viewTag = tag;
+}
+
 - (void)layoutSubviews_DOLinearLayout
 {
     [self layoutSubviews_DOLinearLayout];
     
     if ([self isKindOfClass:[DOLinearLayout class]]) {
-        [(DOLinearLayout *)self layoutLinearLayoutSubviews:self.subviews];
+        [(DOLinearLayout *)self layoutLinearLayoutSubviews:self.subviews linearLayoutParams:self.subviewsLinearLayoutParams];
+        [DOLayoutUtil setSubviewsInLinearLayout:((DOLinearLayout *)self).scrollView];
         
         CGSize size = self.do_size;
         if (!CGSizeEqualToSize([(DOLinearLayout *)self prevSize], size)) {
@@ -777,7 +854,9 @@ static BOOL preparedLinearLayoutable;
         param.gravity = DOLinearLayoutGravityCenter;
         param.autoLineBreak = NO;
         param.dryRun = NO;
-        [DOLayoutUtil layoutSubviews:self.subviews inView:self offset:CGPointZero param:param];
+        NSViewArray *subviews = self.subviews;
+        NSArray *subviewsLinearLayoutParams = self.subviewsLinearLayoutParams;
+        [DOLayoutUtil layoutSubviews:subviews linearLayoutParams:subviewsLinearLayoutParams inView:self offset:CGPointZero param:param];
     }
 }
 
@@ -789,7 +868,7 @@ static BOOL preparedLinearLayoutable;
         [self invalidateIntrinsicContentSize];
         
         if (TESTING) {
-            [(DOLinearLayout *)self layoutLinearLayoutSubviews:self.subviews];
+            [(DOLinearLayout *)self layoutLinearLayoutSubviews:self.subviews linearLayoutParams:self.subviewsLinearLayoutParams];
         }
     } else if (self.do_enableLinearLayout) {
         if (TESTING) {
@@ -798,12 +877,14 @@ static BOOL preparedLinearLayoutable;
             param.gravity = DOLinearLayoutGravityCenter;
             param.autoLineBreak = NO;
             param.dryRun = NO;
-            [DOLayoutUtil layoutSubviews:self.subviews inView:self offset:CGPointZero param:param];
+            NSViewArray *subviews = self.subviews;
+            NSArray *subviewsLinearLayoutParams = self.subviewsLinearLayoutParams;
+            [DOLayoutUtil layoutSubviews:subviews linearLayoutParams:subviewsLinearLayoutParams inView:self offset:CGPointZero param:param];
         }
     }
 }
 
-- (void)didAddSubview_DOLinearLayout:(UIView *)subview
+- (void)didAddSubview_DOLinearLayout:(nonnull UIView *)subview
 {
     [self didAddSubview_DOLinearLayout:subview];
     
@@ -820,7 +901,7 @@ static BOOL preparedLinearLayoutable;
     }
 }
 
-- (void)willRemoveSubview_DOLinearLayout:(UIView *)subview
+- (void)willRemoveSubview_DOLinearLayout:(nonnull UIView *)subview
 {
     [self willRemoveSubview_DOLinearLayout:subview];
     
@@ -829,21 +910,51 @@ static BOOL preparedLinearLayoutable;
         
         if (TESTING) {
             NSMutableArray *t = [self.subviews mutableCopy];
+            NSMutableArray *t2 = [self.subviewsLinearLayoutParams mutableCopy];
+            if ([t indexOfObject:subview] != NSNotFound) {
+                [t2 removeObjectAtIndex:[t indexOfObject:subview]];
+            }
             [t removeObject:subview];
-            [(DOLinearLayout *)self layoutLinearLayoutSubviews:t];
+            [(DOLinearLayout *)self layoutLinearLayoutSubviews:t linearLayoutParams:t2];
         }
     } else if (self.do_enableLinearLayout) {
         if (TESTING) {
             NSMutableArray *t = [self.subviews mutableCopy];
+            NSMutableArray *t2 = [self.subviewsLinearLayoutParams mutableCopy];
+            if ([t indexOfObject:subview] != NSNotFound) {
+                [t2 removeObjectAtIndex:[t indexOfObject:subview]];
+            }
             [t removeObject:subview];
             DOLinearLayoutSubviewsParam *param = [[DOLinearLayoutSubviewsParam alloc] init];
             param.orientation = DOLinearLayoutOrientationHorizontal;
             param.gravity = DOLinearLayoutGravityCenter;
             param.autoLineBreak = NO;
             param.dryRun = NO;
-            [DOLayoutUtil layoutSubviews:t inView:self offset:CGPointZero param:param];
+            [DOLayoutUtil layoutSubviews:t linearLayoutParams:t2 inView:self offset:CGPointZero param:param];
         }
     }
+}
+
+- (nonnull NSArray *)subviewsLinearLayoutParams
+{
+    NSMutableArray *subviewsLinearLayoutParams = [@[] mutableCopy];
+    
+    __strong id<DOLinearLayoutDelegate> linearLayoutDelegate;
+    if ([self isKindOfClass:[DOLinearLayout class]]) {
+        linearLayoutDelegate = ((DOLinearLayout *)self).linearLayoutDelegate;
+    }
+    if (linearLayoutDelegate) {
+        NSArray *tags = [linearLayoutDelegate tagsForContentViews];
+        for (NSNumber *tag in tags) {
+            DOLinearLayoutParam *p = [linearLayoutDelegate linearLayoutParamWithTag:[tag integerValue]];
+            p.viewTag = [tag integerValue];
+            [subviewsLinearLayoutParams addObject:p];
+        }
+    } else {
+        [subviewsLinearLayoutParams addObjectsFromArray:[DOLayoutUtil subviewsLinearLayoutParamsWithSubviews:self.subviews]];
+    }
+    
+    return subviewsLinearLayoutParams;
 }
 
 @end

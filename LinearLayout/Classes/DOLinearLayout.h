@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @class DOLinearLayout;
+@protocol DOLinearLayoutDelegate;
 
 /**
  * layout orientation
@@ -102,6 +103,13 @@ typedef NS_ENUM(int, UIViewVisibility) {
 
 @interface DOLinearLayoutParam : NSObject
 
+@property (nonatomic) CGFloat weight;
+@property (nonatomic) UIEdgeInsets margin;
+@property (nonatomic) UIViewVisibility visibility;
+@property (nonatomic) CGSize contentSize;
+@property (nonatomic) CGRect frame;
+@property (nonatomic) NSInteger viewTag;
+
 @property (nonatomic) UIViewLayoutParam widthParam;
 @property (nonatomic) UIViewLayoutParam heightParam;
 @property (nonatomic) CGFloat width;
@@ -109,11 +117,12 @@ typedef NS_ENUM(int, UIViewVisibility) {
 
 - (BOOL)isHeightMatchParent;
 - (BOOL)isWidthMatchParent;
+- (BOOL)isMatchParentWithOrientation:(DOLinearLayoutOrientation)orientation;
 
-+ (instancetype)paramWithWidth:(CGFloat)w widthParam:(UIViewLayoutParam)wp height:(CGFloat)h heightParam:(UIViewLayoutParam)hp;
-+ (instancetype)paramWithWidth:(CGFloat)w height:(CGFloat)h;
-+ (instancetype)paramMatchParent;
-+ (instancetype)paramWrapContent;
++ (nonnull instancetype)paramWithWidth:(CGFloat)w widthParam:(UIViewLayoutParam)wp height:(CGFloat)h heightParam:(UIViewLayoutParam)hp;
++ (nonnull instancetype)paramWithWidth:(CGFloat)w height:(CGFloat)h;
++ (nonnull instancetype)paramMatchParent;
++ (nonnull instancetype)paramWrapContent;
 
 @property (nonatomic) BOOL isIgnoredFromLinearLayout;
 @property (nonatomic, readonly) BOOL hasAbsolutePosition;
@@ -121,12 +130,31 @@ typedef NS_ENUM(int, UIViewVisibility) {
 @property (nonatomic, readonly) CGPoint absolutePosition;
 @property (nonatomic, readonly) CGPoint relativePosition;
 @property (nonatomic, readonly) UIEdgeInsets relativeMargin;
-@property (nonatomic, weak, readonly) UIView *relativeView;
+@property (nonatomic, weak, nullable, readonly) UIView *relativeView;
 
-+ (instancetype)paramAbsolutePosition:(CGPoint)position;
-+ (instancetype)paramSamePositionToView:(UIView *)view;
-+ (instancetype)paramRelativePosition:(CGPoint)position toView:(UIView *)view;
-+ (instancetype)paramRelativePosition:(CGPoint)position toView:(UIView *)view margin:(UIEdgeInsets)margin;
++ (nonnull instancetype)paramAbsolutePosition:(CGPoint)position;
++ (nonnull instancetype)paramSamePositionToView:(nonnull UIView *)view;
++ (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view;
++ (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view margin:(UIEdgeInsets)margin;
+
+@end
+
+@protocol DOLinearLayoutDelegate <NSObject>
+
+/**
+ * tags for content views
+ */
+- (nonnull NSArray *)tagsForContentViews;
+
+/**
+ * linear layout param with tag
+ */
+- (nullable DOLinearLayoutParam *)linearLayoutParamWithTag:(NSInteger)tag;
+
+/**
+ * view in linear layout with tag
+ */
+- (nullable UIView *)viewInLinearLayoutWithTag:(NSInteger)tag;
 
 @end
 
@@ -147,7 +175,7 @@ IB_DESIGNABLE
 /**
  * layout param
  */
-@property (nonatomic) DOLinearLayoutParam *do_layoutParam;
+@property (nonatomic, nonnull) DOLinearLayoutParam *do_layoutParam;
 
 /**
  * layout param width
@@ -228,13 +256,17 @@ IB_DESIGNABLE
 
 @end
 
-typedef void (^DOLinearLayoutDidChangeSizeBlock)(DOLinearLayout *linearLayout, CGSize size);
+typedef void (^DOLinearLayoutDidChangeSizeBlock)(DOLinearLayout * __nonnull linearLayout, CGSize size);
 
 IB_DESIGNABLE
 
 @interface DOLinearLayout : UIView
 
-@property (nonatomic, copy) DOLinearLayoutDidChangeSizeBlock didChangeSizeBlock;
+@property (nonatomic, copy, nullable) DOLinearLayoutDidChangeSizeBlock didChangeSizeBlock;
+
+@property (nonatomic, weak, nullable) id<DOLinearLayoutDelegate> linearLayoutDelegate;
+
+@property (nonatomic, readonly, nullable) UIScrollView *scrollView;
 
 /**
  * layout orientation
@@ -269,5 +301,7 @@ IB_DESIGNABLE
 @interface UIView (DOLinearLayoutable)
 
 @property (nonatomic) BOOL do_enableLinearLayout;
+
+- (nonnull NSArray *)subviewsLinearLayoutParams;
 
 @end

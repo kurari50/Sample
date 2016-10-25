@@ -17,7 +17,7 @@
 
 @implementation DOLayoutSubviewsParam
 
-- (instancetype)clone
+- (nonnull instancetype)clone
 {
     DOLayoutSubviewsParam *ret = [[self.class alloc] init];
     ret.dryRun = self.dryRun;
@@ -28,7 +28,7 @@
 
 @implementation DOLinearLayoutSubviewsParam
 
-- (instancetype)clone
+- (nonnull instancetype)clone
 {
     DOLinearLayoutSubviewsParam *ret = [super clone];
     ret.orientation = self.orientation;
@@ -39,11 +39,79 @@
 
 @end
 
-@interface DOLinearLayoutScrollView : UIScrollView
+@interface DOLinearLayoutScrollView : UIScrollView <UIScrollViewDelegate>
+
+@property (nonatomic) NSMutableArray *params;
 
 @end
 
 @implementation DOLinearLayoutScrollView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        // subviewsにインジケーター用のUIImageViewが追加されるとレイアウトに影響するので、インジケーターは無しとする
+        self.showsHorizontalScrollIndicator = NO;
+        self.showsVerticalScrollIndicator = NO;
+    }
+    return self;
+}
+
+- (void)setShowsHorizontalScrollIndicator:(BOOL)showsHorizontalScrollIndicator
+{
+    // subviewsにインジケーター用のUIImageViewが追加されるとレイアウトに影響するので、インジケーターは無しとする
+    NSAssert(!showsHorizontalScrollIndicator, @"cant show scroll indicator");
+    [super setShowsHorizontalScrollIndicator:showsHorizontalScrollIndicator];
+}
+
+- (void)setShowsVerticalScrollIndicator:(BOOL)showsVerticalScrollIndicator
+{
+    // subviewsにインジケーター用のUIImageViewが追加されるとレイアウトに影響するので、インジケーターは無しとする
+    NSAssert(!showsVerticalScrollIndicator, @"cant show scroll indicator");
+    [super setShowsVerticalScrollIndicator:showsVerticalScrollIndicator];
+}
+
+- (void)addParam:(nonnull DOLinearLayoutParam *)param
+{
+    if (self.params == nil) {
+        self.params = [@[] mutableCopy];
+    }
+    
+    [self.params addObject:param];
+}
+
+- (void)removeParam:(nonnull DOLinearLayoutParam *)param
+{
+    if (self.params == nil) {
+        self.params = [@[] mutableCopy];
+    }
+    
+    [self.params removeObject:param];
+}
+
+- (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated
+{
+    if (CGPointEqualToPoint(contentOffset, self.contentOffset)) {
+        [self scrollViewDidScroll:self];
+    }
+    
+    [super setContentOffset:contentOffset animated:animated];
+}
+
+- (void)setContentOffset:(CGPoint)contentOffset
+{
+    if (CGPointEqualToPoint(contentOffset, self.contentOffset)) {
+        [self scrollViewDidScroll:self];
+    }
+    
+    [super setContentOffset:contentOffset];
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    [DOLayoutUtil setSubviewsInLinearLayout:self];
+}
 
 @end
 
@@ -52,7 +120,7 @@
 /**
  * viewに対してsetNeedsLayoutする
  */
-+ (void)setNeedsLayout:(UIView *)view
++ (void)setNeedsLayout:(nonnull UIView *)view
 {
 #if TARGET_INTERFACE_BUILDER
     return;
@@ -64,7 +132,7 @@
 /**
  * superviewに対してsetNeedsLayoutする
  */
-+ (void)setNeedsLayoutToSuperview:(UIView *)view
++ (void)setNeedsLayoutToSuperview:(nonnull UIView *)view
 {
 #if TARGET_INTERFACE_BUILDER
     return;
@@ -75,7 +143,7 @@
 /**
  * Viewのコンテンツサイズ
  */
-+ (CGSize)contentSize:(UIView *)view limitSize:(CGSize)limitSize
++ (CGSize)contentSize:(nonnull UIView *)view limitSize:(CGSize)limitSize
 {
     CGFloat w = 0, h = 0;
     
@@ -89,8 +157,9 @@
     if ([view isKindOfClass:[DOLinearLayout class]]) {
         // contentSizeが確定するものを加算する(wrap_contentは0として扱う)
         CGSize size = CGSizeZero;
+        DOLinearLayoutOrientation orientation = [(DOLinearLayout *)view layoutOrientation];
         for (UIView *v in view.subviews) {
-            if ([(DOLinearLayout *)view layoutOrientation] == DOLinearLayoutOrientationHorizontal) {
+            if (orientation == DOLinearLayoutOrientationHorizontal) {
                 if (![v.do_layoutParam isWidthMatchParent]) {
                     size.width += v.do_contentSize.width;
                 }
@@ -99,7 +168,7 @@
                         size.height = v.do_contentSize.height;
                     }
                 }
-            } else if ([(DOLinearLayout *)view layoutOrientation] == DOLinearLayoutOrientationVertical) {
+            } else if (orientation == DOLinearLayoutOrientationVertical) {
                 if (![v.do_layoutParam isWidthMatchParent]) {
                     if (size.width < v.do_contentSize.width) {
                         size.width = v.do_contentSize.width;
@@ -110,6 +179,11 @@
                 }
             }
         }
+        
+        if ([(DOLinearLayout *)view enableAutoLineBreak] && ORIENTATION_VALUE(orientation, view.do_width, view.do_height) < ORIENTATION_VALUE(orientation, size.width, size.height)) {
+            size = [view sizeThatFits:view.frame.size];
+        }
+        
         return size;
     } else if (view.do_enableLinearLayout) {
         // contentSizeが確定するものを加算する(wrap_contentは0として扱う)
@@ -191,7 +265,7 @@
 /**
  * レイアウトする
  */
-+ (CGSize)layoutSubviews:(NSViewArray *)subviews inView:(UIView *)view offset:(CGPoint)offset param:(DOLinearLayoutSubviewsParam *)param;
++ (CGSize)layoutSubviews:(nonnull NSViewArray *)subviews linearLayoutParams:(nonnull NSArray *)linearLayoutParams inView:(nonnull UIView *)view offset:(CGPoint)offset param:(nonnull DOLinearLayoutSubviewsParam *)param
 {
     DOLinearLayoutOrientation orientation = param.orientation;
     DOLinearLayoutGravity gravity = param.gravity;
@@ -202,58 +276,106 @@
     
     BOOL isLayoutingScrollView = NO;
     if ([self.class scrollViewWithSubviews:subviews]) {
-        DOLinearLayoutScrollView *scrollView = [self.class scrollViewWithSubviews:subviews];
+        UIScrollView *scrollView = [self.class scrollViewWithSubviews:subviews];
         isLayoutingScrollView = YES;
         scrollView.frame = view.bounds;
         subviews = scrollView.subviews;
+        if ([scrollView isKindOfClass:[DOLinearLayoutScrollView class]]) {
+            linearLayoutParams = [((DOLinearLayoutScrollView *)scrollView).params mutableCopy];
+        } else {
+            NSAssert(NO, @"");
+            linearLayoutParams = scrollView.subviewsLinearLayoutParams;
+        }
     }
     
-    NSUInteger countOfSubviews = subviews.count;
+    __strong id<DOLinearLayoutDelegate> delegate;
+    if ([view isKindOfClass:[DOLinearLayout class]]) {
+        delegate = ((DOLinearLayout *)view).linearLayoutDelegate;
+    }
+    if (!delegate) {
+        NSAssert(subviews.count == linearLayoutParams.count, @"bad param count");
+    }
+    
+    NSUInteger countOfSubviews = linearLayoutParams.count;
     
     // サイズ計算用に一度ループ
     CGFloat totalT = 0;
     CGFloat totalWeight = 0;
-    for (UIView *v in subviews) {
-        if (v.do_visibility == UIViewVisibilityGone || v.do_isIgnoredFromLinearLayout) {
+    for (NSUInteger i = 0; i < countOfSubviews; i++) {
+        UIView *v = (delegate == nil) ? subviews[i] : nil;
+        DOLinearLayoutParam *p = linearLayoutParams[i];
+        if (p.visibility == UIViewVisibilityGone || p.isIgnoredFromLinearLayout) {
             // なにもしない
-        } else if ([v isMatchParentWithOrientation:orientation]) {
+        } else if ([p isMatchParentWithOrientation:orientation]) {
             // weightの加算
-            totalWeight += v.do_weight;
+            totalWeight += p.weight;
         } else {
             // サイズを加算
-            totalT += ORIENTATION_VALUE(orientation, v.do_contentSize.width, v.do_contentSize.height);
+            if (v) {
+                totalT += ORIENTATION_VALUE(orientation, v.do_contentSize.width, v.do_contentSize.height);
+            } else {
+                totalT += ORIENTATION_VALUE(orientation, p.width, p.height);
+            }
         }
     }
     
     // weightで分割したサイズを算出
     CGFloat remain = ORIENTATION_VALUE(orientation, view.do_width ,view.do_height) - totalT;
     if (remain < 0) {
-        if (autoLineBreak) {
+        if (autoLineBreak && linearLayoutParams.count > 1) {
             // 入りきっていないので、改行する
             CGFloat total = 0;
-            for (NSInteger i = 0, len = subviews.count; i < len ; i++) {
+            for (NSInteger i = 0, len = linearLayoutParams.count; i < len ; i++) {
+                DOLinearLayoutParam *p = linearLayoutParams[i];
                 UIView *v = subviews[i];
-                if (v.do_visibility != UIViewVisibilityGone && !v.do_isIgnoredFromLinearLayout && ![v isMatchParentWithOrientation:orientation]) {
+                if (p.visibility != UIViewVisibilityGone && !p.isIgnoredFromLinearLayout && ![p isMatchParentWithOrientation:orientation]) {
                     // サイズを加算
                     total += ORIENTATION_VALUE(orientation, v.do_contentSize.width, v.do_contentSize.height);
                 }
-                if (i > 0 && ORIENTATION_VALUE(orientation, view.do_width ,view.do_height) < total) {
-                    // 親より大きくなったので、ここで改行する
-                    CGRect orgFrame = view.frame;
-                    if (orientation == DOLinearLayoutOrientationHorizontal) {
-                        orgFrame.size = CGSizeMake(orgFrame.size.width, orgFrame.size.height / 2);
+                if (ORIENTATION_VALUE(orientation, view.do_width, view.do_height) < total) {
+                    // 親より大きくなったので、その前で改行する
+                    NSRange range1;
+                    NSRange range2;
+                    if (i == 0) {
+                        range1 = NSMakeRange(0, 1);
+                        range2 = NSMakeRange(1, len - 1);
                     } else {
-                        orgFrame.size = CGSizeMake(orgFrame.size.width / 2, orgFrame.size.height);
+                        range1 = NSMakeRange(0, i);
+                        range2 = NSMakeRange(i, len - i);
                     }
-                    CGPoint offset = ORIENTATION_VALUE(orientation, CGPointMake(0, orgFrame.size.height), CGPointMake(orgFrame.size.width, 0));
-                    NSViewArray *subarray1 = [subviews subarrayWithRange:NSMakeRange(0, i)];
-                    NSViewArray *subarray2 = [subviews subarrayWithRange:NSMakeRange(i, len - i)];
-                    UIView *subview1 = [[UIView alloc] initWithFrame:orgFrame];
-                    UIView *subview2 = [[UIView alloc] initWithFrame:orgFrame];
-                    DOLinearLayoutSubviewsParam *noAutoLineBreakParam = [param clone];
-                    noAutoLineBreakParam.autoLineBreak = NO;
-                    CGSize size1 = [self.class layoutSubviews:subarray1 inView:subview1 offset:CGPointZero param:noAutoLineBreakParam];
-                    CGSize size2 = [self.class layoutSubviews:subarray2 inView:subview2 offset:offset param:noAutoLineBreakParam];
+                    
+                    NSViewArray *subarray1 = [subviews subarrayWithRange:range1];
+                    NSViewArray *subarray2 = [subviews subarrayWithRange:range2];
+                    NSArray *subparray1 = [linearLayoutParams subarrayWithRange:range1];
+                    NSArray *subparray2 = [linearLayoutParams subarrayWithRange:range2];
+                    UIView *subview1 = [[UIView alloc] initWithFrame:view.frame];
+                    UIView *subview2 = [[UIView alloc] initWithFrame:view.frame];
+                    
+                    NSAssert(subarray1.count, @"");
+                    NSAssert(subarray2.count, @"");
+                    NSAssert(subparray1.count, @"");
+                    NSAssert(subparray2.count, @"");
+                    NSAssert(subarray1.count + subarray2.count == len, @"");
+                    NSAssert(subparray1.count + subparray2.count == len, @"");
+                    
+                    DOLinearLayoutSubviewsParam *cloneParam = [param clone];
+                    if (orientation == DOLinearLayoutOrientationHorizontal) {
+                        if (cloneParam.gravity & DOLinearLayoutGravityCenterVertical) {
+                            cloneParam.gravity &= ~DOLinearLayoutGravityCenterVertical;
+                        }
+                    } else {
+                        if (cloneParam.gravity & DOLinearLayoutGravityCenterHorizontal) {
+                            cloneParam.gravity &= ~DOLinearLayoutGravityCenterHorizontal;
+                        }
+                    }
+                    CGSize size1 = [self.class layoutSubviews:subarray1 linearLayoutParams:subparray1 inView:subview1 offset:offset param:cloneParam];
+                    CGPoint subOffset;
+                    if (orientation == DOLinearLayoutOrientationHorizontal) {
+                        subOffset = CGPointMake(0, size1.height + offset.y);
+                    } else {
+                        subOffset = CGPointMake(size1.width + offset.x, 0);
+                    }
+                    CGSize size2 = [self.class layoutSubviews:subarray2 linearLayoutParams:subparray2 inView:subview2 offset:subOffset param:cloneParam];
                     if (orientation == DOLinearLayoutOrientationHorizontal) {
                         CGFloat w = (size1.width > size2.width) ? size1.width : size2.width;
                         return CGSizeMake(w, size1.height + size2.height);
@@ -280,11 +402,14 @@
     CGFloat position = 0;
     CGFloat maxSelfSize = 0;
     for (NSUInteger i = 0; i < countOfSubviews; i++) {
-        if (subviews[i].do_isIgnoredFromLinearLayout) {
+        UIView *v = (delegate == nil) ? subviews[i] : nil;
+        DOLinearLayoutParam *p = linearLayoutParams[i];
+        if (p.isIgnoredFromLinearLayout) {
             continue;
         }
         
-        CGRect frame = [self.class updateView:subviews[i]
+        CGRect frame = [self.class updateView:v
+                                  layoutParam:p
                                   orientation:orientation
                                        parent:view
                                       gravity:gravity
@@ -318,11 +443,18 @@
     NSInteger slideYInt = [self.class integerWithFloat:slide.y];
     if (position < ORIENTATION_VALUE(orientation, view.do_width, view.do_height))  {
         for (NSUInteger i = 0; i < countOfSubviews; i++) {
-            if (subviews[i].do_isIgnoredFromLinearLayout) {
+            UIView *v = (delegate == nil) ? subviews[i] : nil;
+            DOLinearLayoutParam *p = linearLayoutParams[i];
+            if (p.isIgnoredFromLinearLayout) {
                 continue;
             }
             
-            ORIENTATION_VALUE(orientation, subviews[i].do_x += slideXInt, subviews[i].do_y += slideYInt);
+            ORIENTATION_VALUE(orientation, v.do_x += slideXInt, v.do_y += slideYInt);
+            if (orientation == DOLinearLayoutOrientationHorizontal) {
+                p.frame = CGRectMake(p.frame.origin.x + slideXInt, p.frame.origin.y, p.frame.size.width, p.frame.size.height);
+            } else {
+                p.frame = CGRectMake(p.frame.origin.x, p.frame.origin.y + slideYInt, p.frame.size.width, p.frame.size.height);
+            }
         }
     }
     
@@ -347,22 +479,75 @@
     
     if ([view isKindOfClass:[DOLinearLayout class]]) {
         DOLinearLayout *ll = (DOLinearLayout *)view;
+        DOLinearLayoutScrollView *scrollView = (DOLinearLayoutScrollView *)ll.scrollView;
+        CGSize scrollViewContentSize = ORIENTATION_VALUE(orientation, CGSizeMake(position, view.do_height), CGSizeMake(view.do_weight, position));
+        BOOL over = (position > ORIENTATION_VALUE(orientation, view.do_width, view.do_height));
+        if (over) {
+            scrollView.contentSize = scrollViewContentSize;
+        } else {
+            scrollView.contentOffset = CGPointZero;
+            scrollView.contentSize = CGSizeZero;
+        }
+        
         if (isLayoutingScrollView) {
             // ScrollViewから移動
-            if (!ll.enableScroll || position <= ORIENTATION_VALUE(orientation, view.do_width, view.do_height)) {
-                DOLinearLayoutScrollView *scrollView = [DOLayoutUtil scrollViewWithSubviews:view.subviews];
+            if (scrollView && (!over || !ll.enableScroll) && !delegate) {
                 for (UIView *v in scrollView.subviews) {
                     [view addSubview:v];
+                }
+                if (delegate) {
+                    if ([scrollView isKindOfClass:[DOLinearLayoutScrollView class]]) {
+                        [[(DOLinearLayoutScrollView *)scrollView params] removeAllObjects];
+                    } else {
+                        NSAssert(NO, @"");
+                    }
                 }
                 [scrollView removeFromSuperview];
             }
         } else {
             // ScrollViewに移動
-            if (ll.enableScroll && position > ORIENTATION_VALUE(orientation, view.do_width, view.do_height)) {
-                DOLinearLayoutScrollView *scrollView = [[DOLinearLayoutScrollView alloc] initWithFrame:view.bounds];
-                scrollView.contentSize = ORIENTATION_VALUE(orientation, CGSizeMake(position, view.do_height), CGSizeMake(view.do_weight, position));
-                for (UIView *v in subviews) {
-                    [scrollView addSubview:v];
+            if (ll.enableScroll && !scrollView) {
+                scrollView = [[DOLinearLayoutScrollView alloc] initWithFrame:view.bounds];
+                scrollView.delegate = scrollView;
+                if (over) {
+                    scrollView.contentSize = scrollViewContentSize;
+                } else {
+                    scrollView.contentOffset = CGPointZero;
+                    scrollView.contentSize = CGSizeZero;
+                }
+                
+                if (delegate) {
+                    for (NSNumber *t in [delegate tagsForContentViews]) {
+                        DOLinearLayoutParam *p = [delegate linearLayoutParamWithTag:[t integerValue]];
+                        p.viewTag = [t integerValue];
+                        if (p) {
+                            if (!over) {
+                                UIView *v = [scrollView viewWithTag:[t integerValue]];
+                                if (!v) {
+                                    v = [delegate viewInLinearLayoutWithTag:[t integerValue]];
+                                    
+                                    NSAssert(v.tag == [t integerValue], @"");
+                                    NSAssert(v.tag == p.viewTag, @"");
+                                    NSAssert(v.tag, @"");
+                                    NSAssert(p.viewTag, @"");
+                                    
+                                    v.do_layoutParam = p;
+                                    [scrollView addSubview:v];
+                                } else {
+                                    NSAssert(NO, @"");
+                                }
+                            }
+                            
+                            [scrollView addParam:p];
+                        } else {
+                            NSAssert(NO, @"");
+                        }
+                    }
+                } else {
+                    for (UIView *v in subviews) {
+                        [scrollView addSubview:v];
+                        [scrollView addParam:v.do_layoutParam];
+                    }
                 }
                 [view addSubview:scrollView];
             }
@@ -376,9 +561,10 @@
     return selfSize;
 }
 
-+ (CGRect)updateView:(UIView *)v
++ (CGRect)updateView:(nonnull UIView *)v
+         layoutParam:(nonnull DOLinearLayoutParam *)param
          orientation:(DOLinearLayoutOrientation)orientation
-              parent:(UIView *)view
+              parent:(nonnull UIView *)view
              gravity:(DOLinearLayoutGravity)gravity
      remainPerWeight:(CGFloat)remainPerWeight
             position:(CGFloat)p
@@ -387,7 +573,7 @@
 {
     // hiddenの設定
     if (!dryRun) {
-        switch (v.do_visibility) {
+        switch (param.visibility) {
             case UIViewVisibilityVisible:
                 v.hidden = NO;
                 break;
@@ -402,12 +588,13 @@
     UIEdgeInsets margin = UIEdgeInsetsZero;
     
     // marginとframeの計算
-    if (v.do_visibility == UIViewVisibilityGone) {
+    if (param.visibility == UIViewVisibilityGone) {
         margin = UIEdgeInsetsZero;
         frame = CGRectZero;
-    } else if ([v isMatchParentWithOrientation:orientation]) {
+    } else if ([param isMatchParentWithOrientation:orientation]) {
         margin = v.do_layoutMargin;
         frame = [self.class frameForViewResizeWithView:v
+                                           layoutParam:param
                                            orientation:orientation
                                                 parent:view
                                                gravity:gravity
@@ -416,6 +603,7 @@
     } else {
         margin = v.do_layoutMargin;
         frame = [self.class frameForViewNotResizeWithView:v
+                                              layoutParam:param
                                               orientation:orientation
                                                    parent:view
                                                   gravity:gravity];
@@ -435,10 +623,10 @@
     NSInteger wInt;
     CGSize orgFrameSize = frame.size;
     CGFloat t = ORIENTATION_VALUE(orientation, frame.size.width, frame.size.height);
-    if (v.do_visibility == UIViewVisibilityGone) {
+    if (param.visibility == UIViewVisibilityGone) {
         wInt = 0;
     } else {
-        if ([v isMatchParentWithOrientation:orientation]) {
+        if ([param isMatchParentWithOrientation:orientation]) {
             wInt = [self.class integerWithFloat:p + t] - xInt;
         } else {
             wInt = [self.class integerWithFloat:t];
@@ -454,6 +642,7 @@
         frame = CGRectMake(yInt + offsetXInt, xInt + offsetYInt, hInt, wInt);
     }
     frame = UIEdgeInsetsInsetRect(frame, margin);
+    param.frame = frame;
     if (!dryRun) {
         v.frame = frame;
     }
@@ -468,30 +657,42 @@
     return ORIENTATION_VALUE(orientation, CGRectMake(0, 0, t, orgFrameSize.height), CGRectMake(0, 0, orgFrameSize.width, t));
 }
 
-+ (CGRect)frameForViewNotResizeWithView:(UIView *)v
++ (CGRect)frameForViewNotResizeWithView:(nullable UIView *)v
+                            layoutParam:(nonnull DOLinearLayoutParam *)param
                             orientation:(DOLinearLayoutOrientation)orientation
-                                 parent:(UIView *)view
+                                 parent:(nonnull UIView *)view
                                 gravity:(DOLinearLayoutGravity)gravity
 {
     // 基本はcontentSize
     CGFloat x = 0;
     CGFloat y = 0;
-    CGFloat w = v.do_contentSize.width;
-    CGFloat h = v.do_contentSize.height;
+    CGFloat w;
+    if (v) {
+        w = v.do_contentSize.width;
+    } else {
+        w = param.width;
+    }
+    CGFloat h;
+    if (v) {
+        h  = v.do_contentSize.height;
+    } else {
+        h = param.height;
+    }
     
     // match_parent対応
-    if (orientation == DOLinearLayoutOrientationHorizontal && [v isMatchParentWithOrientation:DOLinearLayoutOrientationVertical]) {
+    if (orientation == DOLinearLayoutOrientationHorizontal && [param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical]) {
         h = view.do_height;
-    } else if (orientation == DOLinearLayoutOrientationVertical && [v isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
+    } else if (orientation == DOLinearLayoutOrientationVertical && [param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
         w = view.do_width;
     }
     
     return CGRectMake(x, y, w, h);
 }
 
-+ (CGRect)frameForViewResizeWithView:(UIView *)v
++ (CGRect)frameForViewResizeWithView:(nullable UIView *)v
+                         layoutParam:(nonnull DOLinearLayoutParam *)param
                          orientation:(DOLinearLayoutOrientation)orientation
-                              parent:(UIView *)view
+                              parent:(nonnull UIView *)view
                              gravity:(DOLinearLayoutGravity)gravity
                                weght:(CGFloat)weight
                      remainPerWeight:(CGFloat)remainPerWeight
@@ -504,10 +705,18 @@
     CGFloat h = parentSize.height;
     
     // wrap_content対応
-    if (orientation == DOLinearLayoutOrientationHorizontal && ![v isMatchParentWithOrientation:DOLinearLayoutOrientationVertical]) {
-        h = v.do_contentSize.height;
-    } else if (orientation == DOLinearLayoutOrientationVertical && ![v isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
-        w = v.do_contentSize.width;
+    if (orientation == DOLinearLayoutOrientationHorizontal && ![param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical]) {
+        if (v) {
+            h = v.do_contentSize.height;
+        } else {
+            h = param.height;
+        }
+    } else if (orientation == DOLinearLayoutOrientationVertical && ![param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
+        if (v) {
+            w = v.do_contentSize.width;
+        } else {
+            w = param.width;
+        }
     }
     
     // weightの適用
@@ -559,7 +768,7 @@
     return CGPointMake(x, y);
 }
 
-+ (void)layoutIgnoredView:(UIView *)view
++ (void)layoutIgnoredView:(nonnull UIView *)view
 {
     if (view.do_layoutParam.hasAbsolutePosition) {
         // 絶対位置
@@ -575,7 +784,7 @@
     }
 }
 
-+ (DOLinearLayoutScrollView *)scrollViewWithSubviews:(NSViewArray *)subviews
++ (nullable UIScrollView *)scrollViewWithSubviews:(nonnull NSViewArray *)subviews
 {
     if (subviews.count == 1 && [subviews[0] isKindOfClass:[DOLinearLayoutScrollView class]]) {
         return (DOLinearLayoutScrollView *)subviews[0];
@@ -583,7 +792,7 @@
     return nil;
 }
 
-+ (DOLinearLayout *)linearLayoutAsSuperview:(UIView *)view
++ (DOLinearLayout *)linearLayoutAsSuperview:(nonnull UIView *)view
 {
     UIView *superview = view.superview;
     if ([view isKindOfClass:[DOLinearLayout class]] && [superview isKindOfClass:[DOLinearLayoutScrollView class]]) {
@@ -594,6 +803,118 @@
         return (DOLinearLayout *)superview;
     } else {
         return nil;
+    }
+}
+
+/**
+ * subviewsからDOLinearLayoutParamの配列を取得する
+ */
++ (NSArray *)subviewsLinearLayoutParamsWithSubviews:(NSViewArray *)subviews
+{
+    NSMutableArray *subviewsLinearLayoutParams = [@[] mutableCopy];
+    
+    for (UIView *v in subviews) {
+        if (v.do_layoutParam) {
+            [subviewsLinearLayoutParams addObject:v.do_layoutParam];
+        } else {
+            [subviewsLinearLayoutParams addObject:[[DOLinearLayoutParam alloc] init]];
+        }
+    }
+    
+    return subviewsLinearLayoutParams;
+}
+
+/**
+ * DOLinearLayoutから指定のtagのついたViewを取得する
+ */
++ (nullable UIView *)viewWithTag:(NSInteger)tag inLinearLayout:(nonnull DOLinearLayout *)linearLayout
+{
+    UIView *v = nil;
+    
+    id<DOLinearLayoutDelegate> deletage = linearLayout.linearLayoutDelegate;
+    if (deletage) {
+        v = [deletage viewInLinearLayoutWithTag:tag];
+        
+        NSAssert(v.tag == tag, @"");
+        NSAssert(v.tag, @"");
+        NSAssert(tag, @"");
+        
+        DOLinearLayoutScrollView *scrollView = (DOLinearLayoutScrollView *)linearLayout.scrollView;
+        if (v && scrollView) {
+            for (DOLinearLayoutParam *p in [scrollView.params mutableCopy]) {
+                if (p.viewTag == tag) {
+                    v.frame = p.frame;
+                    break;
+                }
+            }
+        }
+    }
+    
+    return v;
+}
+
+/**
+ * DOLinearLayoutScrollView内のViewを配置する
+ */
++ (void)setSubviewsInLinearLayout:(nonnull DOLinearLayoutScrollView *)scrollView
+{
+    DOLinearLayout *ll = (DOLinearLayout *)scrollView.superview;
+    if (!ll) {
+        return;
+    }
+    if (![ll isKindOfClass:[DOLinearLayout class]]) {
+        NSAssert(NO, @"");
+        return;
+    }
+    if (![scrollView isKindOfClass:[DOLinearLayoutScrollView class]]) {
+        NSAssert(NO, @"");
+        return;
+    }
+    id<DOLinearLayoutDelegate> delegate = ll.linearLayoutDelegate;
+    if (!delegate) {
+        return;
+    }
+    
+    CGPoint offset = scrollView.contentOffset;
+    CGSize size = scrollView.frame.size;
+    
+    CGRect visibleRect = CGRectZero;
+    visibleRect.origin = offset;
+    visibleRect.size = size;
+    
+    for (DOLinearLayoutParam *p in [scrollView.params mutableCopy]) {
+        if (CGRectEqualToRect(p.frame, CGRectZero)) {
+            continue;
+        }
+        
+        NSAssert(p.viewTag != 0, @"");
+        if (p.viewTag == 0) {
+            continue;
+        }
+        
+        UIView *v = [scrollView viewWithTag:p.viewTag];
+        if (CGRectIntersectsRect(p.frame, visibleRect)) {
+            if (!v.subviews) {
+                // 見える範囲にViewが配置されているので、addSubViewする
+                v = [delegate viewInLinearLayoutWithTag:p.viewTag];
+                
+                NSAssert(v.tag == p.viewTag, @"");
+                NSAssert(v.tag, @"");
+                NSAssert(p.viewTag, @"");
+                
+                if (v) {
+                    [scrollView addSubview:v];
+                } else {
+                    NSAssert(NO, @"");
+                }
+            }
+            v.frame = p.frame;
+        } else {
+            if (v.subviews) {
+                // 見える範囲に外にViewが配置されているので、removeFromSuperviewする
+                [v removeFromSuperview];
+            }
+        }
     }
 }
 
