@@ -242,16 +242,24 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
             return;
         }
         
-        if ([key rangeOfString:@"."].location == NSNotFound) {
+        if ([key hasPrefix:@"//"]) {
+            // コメント
+        } else if ([key rangeOfString:@"."].location == NSNotFound) {
             if ([key isEqualToString:DOCREATOR_KEY_SUBVIEWS]) {
                 subviewsProperty[key] = value;
+            } else if ([key isEqualToString:DOCREATOR_KEY_EVENT]) {
+                if ([obj isKindOfClass:[UIButton class]]) {
+                    [(UIButton *)obj setEventWithDictionary:value];
+                } else {
+                    NSAssert(NO, @"");
+                }
             } else {
                 objectProperty[key] = [self fromJsonObject:value];
             }
         } else {
             NSArray *split = [key componentsSeparatedByString:@"."];
-            NSString *subKey = [[split subarrayWithRange:NSMakeRange(0, split.count - 1)] componentsJoinedByString:@"."];
-            NSString *subValue = [split subarrayWithRange:NSMakeRange(split.count - 1, 1)][0];
+            NSString *subKey = [split subarrayWithRange:NSMakeRange(0, 1)][0];
+            NSString *subValue = [[split subarrayWithRange:NSMakeRange(1, split.count - 1)] componentsJoinedByString:@"."];
             if (subObjectProperty[subKey] == nil) {
                 subObjectProperty[subKey] = [@{subValue : value} mutableCopy];
             } else {
@@ -268,7 +276,12 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
         id view = [NSObject fromJsonObject:value];
         if ([view isKindOfClass:[NSArray class]]) {
             for (id v in view) {
-                [(UIView *)obj addSubview:v];
+                id t = [NSObject fromJsonObject:v];
+                if (t == nil) {
+                    NSAssert(NO, @"invalid subviews object");
+                } else {
+                    [(UIView *)obj addSubview:t];
+                }
             }
         } else if ([view isKindOfClass:[UIView class]]) {
             [(UIView *)obj addSubview:view];
@@ -286,21 +299,39 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
         
         if ([key hasPrefix:DOCREATOR_KEY_SUBVIEWS]) {
             // indexでviewを指定してのプロパティの設定をサポートする
-            if ([obj isKindOfClass:[UIView class]]) {
-                NSString *viewIndex = [key stringByReplacingOccurrencesOfString:DOCREATOR_KEY_SUBVIEWS withString:@""];
+            if ([obj isKindOfClass:[UIView class]] || [obj isKindOfClass:[UIViewController class]]) {
+                NSString *viewIndex = [[key componentsSeparatedByString:@"."][0] stringByReplacingOccurrencesOfString:DOCREATOR_KEY_SUBVIEWS withString:@""];
                 if ([viewIndex hasPrefix:@"("] && [viewIndex hasSuffix:@")"] && viewIndex.length > 2) {
                     viewIndex = [viewIndex substringWithRange:NSMakeRange(1, viewIndex.length - 2)];
-                    subObject = [(UIView *)obj subviews][viewIndex.integerValue];
+                    NSInteger viewIndexInteger = viewIndex.integerValue;
+                    if ([[@(viewIndexInteger) description] isEqualToString:viewIndex]) {
+                        if ([obj isKindOfClass:[UIView class]]) {
+                            subObject = [(UIView *)obj subviews][viewIndexInteger];
+                        } else if ([obj isKindOfClass:[UIViewController class]]) {
+                            subObject = [[(UIViewController *)obj view] subviews][viewIndexInteger];
+                        }
+                    } else {
+                        NSAssert(NO, @"");
+                    }
                 }
             }
         }
         if ([key hasPrefix:DOCREATOR_KEY_VIEW]) {
             // tagでviewを指定してのプロパティの設定をサポートする
-            if ([obj isKindOfClass:[UIView class]]) {
-                NSString *viewTag = [key stringByReplacingOccurrencesOfString:DOCREATOR_KEY_VIEW withString:@""];
+            if ([obj isKindOfClass:[UIView class]] || [obj isKindOfClass:[UIViewController class]]) {
+                NSString *viewTag = [[key componentsSeparatedByString:@"."][0] stringByReplacingOccurrencesOfString:DOCREATOR_KEY_VIEW withString:@""];
                 if ([viewTag hasPrefix:@"("] && [viewTag hasSuffix:@")"] && viewTag.length > 2) {
                     viewTag = [viewTag substringWithRange:NSMakeRange(1, viewTag.length - 2)];
-                    subObject = [(UIView *)obj viewWithTag:viewTag.integerValue];
+                    NSInteger viewTagInteger = viewTag.integerValue;
+                    if (viewTagInteger != 0 && [[@(viewTagInteger) description] isEqualToString:viewTag]) {
+                        if ([obj isKindOfClass:[UIView class]]) {
+                            subObject = [(UIView *)obj viewWithTag:viewTagInteger];
+                        } else if ([obj isKindOfClass:[UIViewController class]]) {
+                            subObject = [[(UIViewController *)obj view] viewWithTag:viewTagInteger];
+                        }
+                    } else {
+                        NSAssert(NO, @"");
+                    }
                 }
             }
         }
@@ -375,7 +406,14 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
     }
     
     Class clazz = NSClassFromString(evalObject[DOCREATOR_KEY_STATIC]);
-    NSObject *obj = evalObject[DOCREATOR_KEY_OBJECT];
+    NSObject *obj = nil;
+    if ([evalObject[DOCREATOR_KEY_OBJECT] isKindOfClass:[NSString class]]) {
+        obj = [NSObject fromJsonString:evalObject[DOCREATOR_KEY_OBJECT]];
+    } else if ([evalObject[DOCREATOR_KEY_OBJECT] isKindOfClass:[NSDictionary class]] && evalObject[DOCREATOR_KEY_OBJECT][DOCREATOR_KEY_EVAL]) {
+        obj = [NSObject evalObject:evalObject[DOCREATOR_KEY_OBJECT][DOCREATOR_KEY_EVAL]];
+    } else {
+        obj = evalObject[DOCREATOR_KEY_OBJECT];
+    }
     SEL selector = NSSelectorFromString(evalObject[DOCREATOR_KEY_METHOD]);
     
     NSMethodSignature *signature = nil;
