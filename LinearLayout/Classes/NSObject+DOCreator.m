@@ -546,16 +546,14 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
         UIViewController *vc = [UIViewController fromJsonObject:push];
         if ([vc isKindOfClass:[UIViewController class]]) {
             [[NSNotificationCenter defaultCenter] postNotificationName:DOCREATOR_PUSH_EVENT_NOTIFICATION_NAME object:nil userInfo:@{DOCREATOR_KEY_VIEW_CONTROLLER : vc, DOCREATOR_KEY_VIEW : superviews}];
-            return;
+        } else {
+            NSAssert(NO, @"invalid push view controller");
         }
-        
-        NSAssert(NO, @"invalid push view controller");
     }
     
     NSDictionary *eval = [self DOCreator_event][DOCREATOR_KEY_EVAL];
     if (eval) {
-        [NSObject evalObject:[self DOCreator_event][DOCREATOR_KEY_EVAL]];
-        return;
+        [NSObject evalObject:eval];
     }
 }
 
@@ -565,6 +563,7 @@ static id<DOCreatorDelegate> s_delegaate_DOCreator;
 
 - (void)setPushEventReceiver
 {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:DOCREATOR_PUSH_EVENT_NOTIFICATION_NAME object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(DOCreator_didReceivePushEvent:) name:DOCREATOR_PUSH_EVENT_NOTIFICATION_NAME object:nil];
 }
 
