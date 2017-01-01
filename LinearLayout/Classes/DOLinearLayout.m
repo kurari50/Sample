@@ -70,7 +70,7 @@
 
 + (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view
 {
-    return [self.class paramRelativePosition:CGPointZero toView:view margin:UIEdgeInsetsZero];
+    return [self.class paramRelativePosition:position toView:view margin:UIEdgeInsetsZero];
 }
 
 + (nonnull instancetype)paramRelativePosition:(CGPoint)position toView:(nonnull UIView *)view margin:(UIEdgeInsets)margin
