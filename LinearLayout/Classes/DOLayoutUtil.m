@@ -263,6 +263,27 @@
 }
 
 /**
+ * fromをsizeに合わせてサイズを調整する
+ */
++ (CGSize)sizeFrom:(CGSize)from to:(CGSize)size aspectKeep:(BOOL)aspectKeep
+{
+    if (aspectKeep) {
+        CGFloat ratio = from.width / from.height;
+        if (size.width < size.height) {
+            from.width = size.width;
+            from.height = from.width / ratio;
+        } else {
+            from.height = size.height;
+            from.width = from.height * ratio;
+        }
+    } else {
+        from.width = size.width;
+        from.height = size.height;
+    }
+    return from;
+}
+
+/**
  * レイアウトする
  */
 + (CGSize)layoutSubviews:(nonnull NSViewArray *)subviews linearLayoutParams:(nonnull NSArray *)linearLayoutParams inView:(nonnull UIView *)view offset:(CGPoint)offset param:(nonnull DOLinearLayoutSubviewsParam *)param
@@ -641,6 +662,10 @@
     } else if (orientation == DOLinearLayoutOrientationVertical) {
         frame = CGRectMake(yInt + offsetXInt, xInt + offsetYInt, hInt, wInt);
     }
+    if ([v isKindOfClass:[UIImageView class]] && [(UIImageView *)v do_aspectKeep]) {
+        // aspectKeepはすでにmarginはsizeに対して適用されているので、位置だけ変更されるように調整する
+        frame.size = CGSizeMake(frame.size.width + margin.left + margin.right, frame.size.height + margin.top + margin.bottom);
+    }
     frame = UIEdgeInsetsInsetRect(frame, margin);
     param.frame = frame;
     if (!dryRun) {
@@ -686,6 +711,31 @@
         w = view.do_width;
     }
     
+    // aspectKeepの適用
+    if ([v isKindOfClass:[UIImageView class]]) {
+        UIImageView *iv = (UIImageView *)v;
+        if (iv.do_aspectKeep) {
+            UIEdgeInsets margin = v.do_layoutMargin;
+            w = w - margin.left - margin.right;
+            h = h - margin.top - margin.bottom;
+            
+            if ([param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical] ||
+                [param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
+                w = MIN(w, h);
+                h = w;
+            } else {
+                w = MAX(w, h);
+                h = w;
+            }
+            
+            CGFloat scaledWidth = iv.image.size.width / iv.image.scale;
+            CGFloat scaledHeight = iv.image.size.height / iv.image.scale;
+            CGSize aspectKeepSize = [self.class sizeFrom:CGSizeMake(scaledWidth, scaledHeight) to:CGSizeMake(w, h) aspectKeep:YES];
+            h = aspectKeepSize.height;
+            w = aspectKeepSize.width;
+        }
+    }
+    
     return CGRectMake(x, y, w, h);
 }
 
@@ -725,6 +775,31 @@
         ORIENTATION_VALUE(orientation, w = t, h = t);
     } else {
         ORIENTATION_VALUE(orientation, w = 0, h = 0);
+    }
+    
+    // aspectKeepの適用
+    if ([v isKindOfClass:[UIImageView class]]) {
+        UIImageView *iv = (UIImageView *)v;
+        if (iv.do_aspectKeep) {
+            UIEdgeInsets margin = v.do_layoutMargin;
+            w = w - margin.left - margin.right;
+            h = h - margin.top - margin.bottom;
+            
+            if ([param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical] ||
+                [param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
+                w = MIN(w, h);
+                h = w;
+            } else {
+                w = MAX(w, h);
+                h = w;
+            }
+            
+            CGFloat scaledWidth = iv.image.size.width / iv.image.scale;
+            CGFloat scaledHeight = iv.image.size.height / iv.image.scale;
+            CGSize aspectKeepSize = [self.class sizeFrom:CGSizeMake(scaledWidth, scaledHeight) to:CGSizeMake(w, h) aspectKeep:YES];
+            h = aspectKeepSize.height;
+            w = aspectKeepSize.width;
+        }
     }
     
     return CGRectMake(x, y, w, h);

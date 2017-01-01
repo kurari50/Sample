@@ -57,6 +57,11 @@
 + (CGSize)sizeFrom:(CGSize)from limit:(CGSize)limit aspectKeep:(BOOL)aspectKeep;
 
 /**
+ * fromをsizeに合わせてサイズを調整する
+ */
++ (CGSize)sizeFrom:(CGSize)from to:(CGSize)size aspectKeep:(BOOL)aspectKeep;
+
+/**
  * レイアウトする
  */
 + (CGSize)layoutSubviews:(nonnull NSViewArray *)subviews linearLayoutParams:(nonnull NSArray *)linearLayoutParams inView:(nonnull UIView *)view offset:(CGPoint)offset param:(nonnull DOLinearLayoutSubviewsParam *)param;
