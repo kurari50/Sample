@@ -682,6 +682,65 @@
     return ORIENTATION_VALUE(orientation, CGRectMake(0, 0, t, orgFrameSize.height), CGRectMake(0, 0, orgFrameSize.width, t));
 }
 
+/**
+ * aspectKeepの適用
+ */
++ (CGSize)aspectKeepSizeWithImageView:(UIImageView *)v
+                             baseSize:(CGSize)baseSize
+                                param:(DOLinearLayoutParam *)param
+                         orienatation:(DOLinearLayoutOrientation)orientation
+{
+    CGFloat w = baseSize.width;
+    CGFloat h = baseSize.height;
+    if ([v isKindOfClass:[UIImageView class]]) {
+        UIImageView *iv = (UIImageView *)v;
+        if (iv.do_aspectKeep) {
+            UIEdgeInsets margin = v.do_layoutMargin;
+            w = w - margin.left - margin.right;
+            h = h - margin.top - margin.bottom;
+            
+            if ([param isHeightMatchParent]) {
+                if ([param isWidthMatchParent]) {
+                    // 縦横、両方match_parent
+                    w = MIN(w, h);
+                    h = w;
+                } else {
+                    // 縦だけmatch_parent
+                    if (orientation == DOLinearLayoutOrientationHorizontal) {
+                        w = MAX(w, h);
+                        h = w;
+                    } else {
+                        w = MIN(w, h);
+                        h = w;
+                    }
+                }
+            } else {
+                if ([param isWidthMatchParent]) {
+                    // 横だけmatch_parent
+                    if (orientation == DOLinearLayoutOrientationHorizontal) {
+                        w = MIN(w, h);
+                        h = w;
+                    } else {
+                        w = MAX(w, h);
+                        h = w;
+                    }
+                } else {
+                    // 縦横、両方wrap_parent
+                    w = MAX(w, h);
+                    h = w;
+                }
+            }
+            
+            CGFloat scaledWidth = iv.image.size.width / iv.image.scale;
+            CGFloat scaledHeight = iv.image.size.height / iv.image.scale;
+            CGSize aspectKeepSize = [self.class sizeFrom:CGSizeMake(scaledWidth, scaledHeight) to:CGSizeMake(w, h) aspectKeep:YES];
+            h = aspectKeepSize.height;
+            w = aspectKeepSize.width;
+        }
+    }
+    return CGSizeMake(w, h);
+}
+
 + (CGRect)frameForViewNotResizeWithView:(nullable UIView *)v
                             layoutParam:(nonnull DOLinearLayoutParam *)param
                             orientation:(DOLinearLayoutOrientation)orientation
@@ -715,22 +774,7 @@
     if ([v isKindOfClass:[UIImageView class]]) {
         UIImageView *iv = (UIImageView *)v;
         if (iv.do_aspectKeep) {
-            UIEdgeInsets margin = v.do_layoutMargin;
-            w = w - margin.left - margin.right;
-            h = h - margin.top - margin.bottom;
-            
-            if ([param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical] ||
-                [param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
-                w = MIN(w, h);
-                h = w;
-            } else {
-                w = MAX(w, h);
-                h = w;
-            }
-            
-            CGFloat scaledWidth = iv.image.size.width / iv.image.scale;
-            CGFloat scaledHeight = iv.image.size.height / iv.image.scale;
-            CGSize aspectKeepSize = [self.class sizeFrom:CGSizeMake(scaledWidth, scaledHeight) to:CGSizeMake(w, h) aspectKeep:YES];
+            CGSize aspectKeepSize = [self.class aspectKeepSizeWithImageView:iv baseSize:CGSizeMake(w, h) param:param orienatation:orientation];
             h = aspectKeepSize.height;
             w = aspectKeepSize.width;
         }
@@ -781,22 +825,7 @@
     if ([v isKindOfClass:[UIImageView class]]) {
         UIImageView *iv = (UIImageView *)v;
         if (iv.do_aspectKeep) {
-            UIEdgeInsets margin = v.do_layoutMargin;
-            w = w - margin.left - margin.right;
-            h = h - margin.top - margin.bottom;
-            
-            if ([param isMatchParentWithOrientation:DOLinearLayoutOrientationVertical] ||
-                [param isMatchParentWithOrientation:DOLinearLayoutOrientationHorizontal]) {
-                w = MIN(w, h);
-                h = w;
-            } else {
-                w = MAX(w, h);
-                h = w;
-            }
-            
-            CGFloat scaledWidth = iv.image.size.width / iv.image.scale;
-            CGFloat scaledHeight = iv.image.size.height / iv.image.scale;
-            CGSize aspectKeepSize = [self.class sizeFrom:CGSizeMake(scaledWidth, scaledHeight) to:CGSizeMake(w, h) aspectKeep:YES];
+            CGSize aspectKeepSize = [self.class aspectKeepSizeWithImageView:iv baseSize:CGSizeMake(w, h) param:param orienatation:orientation];
             h = aspectKeepSize.height;
             w = aspectKeepSize.width;
         }
