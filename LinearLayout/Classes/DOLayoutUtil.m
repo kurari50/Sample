@@ -330,6 +330,15 @@
         } else if ([p isMatchParentWithOrientation:orientation]) {
             // weightの加算
             totalWeight += p.weight;
+        } else if ([v isKindOfClass:[UIImageView class]] && ((UIImageView *)v).do_aspectKeep) {
+            // aspectKeepを考慮してサイズを加算
+            DOLinearLayoutParam *param = v.do_layoutParam;
+            CGRect frame = [self.class frameForViewNotResizeWithView:v
+                                                         layoutParam:param
+                                                         orientation:orientation
+                                                              parent:view
+                                                             gravity:gravity];
+            totalT += ORIENTATION_VALUE(orientation, frame.size.width, frame.size.height);
         } else {
             // サイズを加算
             if (v) {
