@@ -129,11 +129,20 @@ do
     echo "    case "$SCREEN_NAME >> $OUTPUT_SCREEN_ENUM_SWIFT_FILE
 
     echo "extension "${SCREEN_NAME}${STATE_MACHINE_SUFFIX}" {" >> $OUTPUT_STATE_ENUM_SWIFT_FILE
+
+    echo "protocol ${SCREEN_NAME}StateChangeHandling {" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "    func onEntryState(_ state: ${SCREEN_NAME}${STATE_MACHINE_SUFFIX}.State, viewModel: ${SCREEN_NAME}ViewModel)" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "    func onExitState(_ state: ${SCREEN_NAME}${STATE_MACHINE_SUFFIX}.State, viewModel: ${SCREEN_NAME}ViewModel)" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "}" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+
     echo "class "${SCREEN_NAME}${STATE_MACHINE_SUFFIX}" {" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
     echo "    var state: State = ."$STATE_MACHINE_DEFAULD_STATE | sed "s/$STATE_STRING//" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
-    echo "    let viewModel: "${SCREEN_NAME}"ViewModel" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
-    echo "    init(viewModel: "${SCREEN_NAME}"ViewModel) {" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "    private let viewModel: "${SCREEN_NAME}"ViewModel" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "    private let handler: ${SCREEN_NAME}StateChangeHandling?" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+
+    echo "    init(viewModel: "${SCREEN_NAME}"ViewModel, handler: ${SCREEN_NAME}StateChangeHandling? = nil) {" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
     echo "        self.viewModel = viewModel" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+    echo "        self.handler = handler" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
     echo "    }" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
 
     EVENT_LIST=()
@@ -237,6 +246,10 @@ do
 
         echo "    }" >> $OUTPUT_STATE_ENUM_SWIFT_FILE
         echo "        default: break" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+        echo "        }" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+        echo "        if let handler = handler, state != newState {" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+        echo "            handler.onExitState(state, viewModel: viewModel)" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
+        echo "            handler.onEntryState(newState, viewModel: viewModel)" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
         echo "        }" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
         echo "        state = newState" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
         echo "    }" >> $OUTPUT_EVENT_ENUM_SWIFT_FILE
